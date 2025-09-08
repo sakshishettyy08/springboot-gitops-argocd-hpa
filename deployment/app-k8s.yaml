@@ -1,0 +1,76 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: spring-boot-kubernetes-mysql
+  labels:
+    app: spring-boot-kubernetes-mysql
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+  selector:
+    app: spring-boot-kubernetes-mysql
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spring-boot-kubernetes-mysql
+  labels:
+    app: spring-boot-kubernetes-mysql
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: spring-boot-kubernetes-mysql
+  template:
+    metadata:
+      labels:
+        app: spring-boot-kubernetes-mysql
+    spec:
+      serviceAccountName: spring-boot-kubernetes-mysql
+      containers:
+        - name: spring-boot-kubernetes-mysql
+          image: 866934333672.dkr.ecr.us-east-1.amazonaws.com/springboot-mysql:latest
+          imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              cpu: 100m
+              memory: 100Mi
+            limits:
+              cpu: 1
+              memory: 1Gi
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: k8s
+            - name: SPRING_DATASOURCE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: mysql-config
+                  key: MYSQL_DATABASE_URL
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: MYSQL_USER
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: MYSQL_PASSWORD
+          readinessProbe:
+            httpGet:
+              path: /api/v1/actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/v1/actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 15
