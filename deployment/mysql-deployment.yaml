@@ -20,6 +20,7 @@ spec:
   resources:
     requests:
       storage: 5Gi
+  storageClassName: gp2   # ✅ Ensure EKS default storage
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -43,8 +44,8 @@ spec:
           name: mysql
           resources:
             requests:
-              cpu: 500m
-              memory: 500Mi
+              cpu: 250m   # ✅ lowered to avoid scheduling issues
+              memory: 256Mi
             limits:
               cpu: 1
               memory: 1Gi
@@ -83,4 +84,4 @@ spec:
             claimName: mysql-pv-claim
         - name: initdb
           configMap:
-            name: mysql-config
+            name: mysql-initdb   # ✅ separate configmap only for init SQL
